@@ -5,10 +5,9 @@ defmodule Morphine.NeuronTest do
   test "forward propagation" do
     neuron = %Morphine.Neuron{inputs: [1, 1], weights: [0.8, 0.2], bias: 0.3}
 
-    {target, error, summation, summation_with_sigmoid, calculation} =
+    {error, summation, summation_with_sigmoid, calculation} =
     Morphine.Neuron.forward_propagation(neuron, 0)
 
-    assert target == 0
     assert error  == -0.5546106700105877
     assert summation == 1.0
     assert summation_with_sigmoid == 0.7310585786300049
@@ -57,6 +56,49 @@ defmodule Morphine.NeuronTest do
     smarter = Morphine.Neuron.learn!(neuron, 0)
 
     assert Morphine.Neuron.predict(smarter) == 0
+  end
+
+  test "some smartness" do
+    _spec = """
+      pants -> BLUE:0.1 BLACK:0.2 BROWN:0.3
+      coats -> BLUE:0.4 BLACK:0.5 BROWN:0.6
+    """
+
+    #### BLUE PANTS
+    pants = %Morphine.Neuron{inputs: [0.1], weights: [0.5]}
+
+    n1 = Morphine.Neuron.learn!(pants, 0.4)
+    n2 = Morphine.Neuron.learn!(pants, 0.5)
+
+    results = Enum.map([n1, n2], &Morphine.Neuron.predict(&1))
+    assert results == [0.4, 0.5]
+
+    #### BLACK PANTS
+    pants = %Morphine.Neuron{inputs: [0.2], weights: [0.5]}
+
+    n1 = Morphine.Neuron.learn!(pants, 0.4)
+    n2 = Morphine.Neuron.learn!(pants, 0.5)
+    n3 = Morphine.Neuron.learn!(pants, 0.6)
+
+    results = Enum.map([n1, n2, n3], &Morphine.Neuron.predict(&1))
+    assert results == [0.4, 0.5, 0.6]
+
+    #### BROWN PANTS
+    pants = %Morphine.Neuron{inputs: [0.3], weights: [0.5]}
+
+    n1 = Morphine.Neuron.learn!(pants, 0.6)
+
+    results = Enum.map([n1], &Morphine.Neuron.predict(&1))
+    assert results == [0.6]
+
+    #### BLUE COAT
+    pants = %Morphine.Neuron{inputs: [0.4], weights: [0.5]}
+
+    n1 = Morphine.Neuron.learn!(pants, 0.1)
+    n2 = Morphine.Neuron.learn!(pants, 0.2)
+
+    results = Enum.map([n1, n2], &Morphine.Neuron.predict(&1))
+    assert results == [0.1, 0.2]
   end
 
 end

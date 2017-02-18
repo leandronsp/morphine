@@ -64,10 +64,10 @@ defmodule Morphine.Neuron do
     output      = activation(calculation, :sigmoid)
     error       = error_margin(output, target)
 
-    {target, error, summation, summation_with_sigmoid, calculation}
+    {error, summation, summation_with_sigmoid, calculation}
   end
 
-  def back_propagation({target, error, summation, summation_with_sigmoid, calculation}, neuron) do
+  def back_propagation({error, summation, summation_with_sigmoid, calculation}, neuron) do
     delta_a = sigmoid_prime(calculation) * error
     delta_b = (delta_a / neuron.bias) * sigmoid_prime(summation)
 
@@ -83,16 +83,12 @@ defmodule Morphine.Neuron do
   end
 
   def learn!(neuron, target) do
-    predict(neuron) |> learn!(neuron, target)
-  end
-
-  def learn!(result, neuron, target) do
     smarter = learn(neuron, target)
     result  = predict(neuron)
 
     case result |> Float.round(2) == target do
       true  -> smarter
-      false -> learn!(result, smarter, target)
+      false -> learn!(smarter, target)
     end
   end
 
