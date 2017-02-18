@@ -2,13 +2,21 @@
 
 **A neural network library built on top of Elixir.**
 
-	use Morphine.Neuron
-	
-	%Neuron{inputs: [1, 0], weights: [0.5, 0.8], bias: 0.2}
-	|> Neuron.calculate_output
-	|> Neuron.calculate_error_margin(1)
+	neuron  = %Morphine.Neuron{inputs: [1, 1], weights: [0.8, 0.2], bias: 0.3}
+  Morphine.Neuron.predict(neuron)
 
-	output: 0.223427890212	
+  output: 0.55
+
+  smarter = Morphine.Neuron.learn(neuron, 0)
+  Morphine.Neuron.predict(smarter)
+
+  output: 0.51
+
+  ### learn! until it reaches target ###
+	genius = Morphine.Neuron.learn!(neuron, 0)
+  Morphine.Neuron.predict(genius)
+
+	# output: 0
 
 ### Author
 @leandronsp
