@@ -28,11 +28,11 @@ defmodule Morphine.NeuralNetworkTest do
     assert Network.get_layers(network) |> length == 2
   end
 
-  test "#learn and #predict using two layers", %{network: network} do
-    Network.setup_layers(network, [{4, 3}, {2, 4}])
+  test "#learn and #predict using multiple layers", %{network: network} do
+    Network.setup_layers(network, [{4, 3}, {4, 4}, {1, 4}])
 
     inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1]]
-    outputs = ExAlgebra.Matrix.transpose([[0, 1, 1], [0, 1, 1]])
+    outputs = ExAlgebra.Matrix.transpose([[0, 1, 1]])
 
     Network.learn(network, inputs, outputs, 10000)
     assert Network.predict!(network, [[1, 1, 0]]) > 0.99
@@ -57,16 +57,5 @@ defmodule Morphine.NeuralNetworkTest do
     Network.learn(network, inputs, outputs, 60000)
     assert Network.predict!(network, [[1, 1, 0]]) == 0.007887604373626915
   end
-
-  #test "#learn and #predict using three layers", %{network: network} do
-  #  Network.setup_layers(network, [{4, 2}, {4, 4}, {1, 4}])
-
-  #  inputs = [[0, 0], [0, 1], [1, 0], [1, 1]]
-  #  outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 0]])
-
-  #  Network.learn(network, inputs, outputs, 60000)
-  #  {_, output} = Network.predict(network, [[0, 0]])
-  #  assert output == [[0.007887604373626915]]
-  #end
 
 end

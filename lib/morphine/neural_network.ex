@@ -68,10 +68,10 @@ defmodule Morphine.NeuralNetwork do
   end
 
   def adjust(inputs, target, [{layer, output}|remaining]) do
-    {{next_layer, output_next_layer}, _} = List.pop_at(remaining, 0)
+    {{last_layer, output_last_layer}, _} = List.pop_at(remaining, length(remaining) - 1)
 
-    deltanl    = delta(target, output_next_layer)
-    delta      = delta(output, next_layer, deltanl)
+    deltanl    = delta(target, output_last_layer)
+    delta      = delta(output, last_layer, deltanl)
     adjustment = ExAlgebra.Matrix.transpose(inputs) |> ExAlgebra.Matrix.multiply(delta)
 
     adjusted =
@@ -95,10 +95,10 @@ defmodule Morphine.NeuralNetwork do
   end
 
   def adjust(inputs, target, [{layer, output}|remaining], output_previous_layer, acc) do
-    {{next_layer, output_next_layer}, _} = List.pop_at(remaining, 0)
+    {{last_layer, output_last_layer}, _} = List.pop_at(remaining, length(remaining) - 1)
 
-    deltanl    = delta(target, output_next_layer)
-    delta      = delta(output, next_layer, deltanl)
+    deltanl    = delta(target, output_last_layer)
+    delta      = delta(output, last_layer, deltanl)
     adjustment = ExAlgebra.Matrix.transpose(output_previous_layer) |> ExAlgebra.Matrix.multiply(delta)
 
     adjusted =

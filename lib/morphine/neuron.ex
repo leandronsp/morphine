@@ -1,5 +1,5 @@
 defmodule Morphine.Neuron do
-  defstruct weights: []
+  defstruct weights: [], bias: 1
 
   @moduledoc """
   Documentation for Morphine.Neuron.
