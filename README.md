@@ -2,21 +2,24 @@
 
 **A neural network library built on top of Elixir.**
 
-	neuron = %Morphine.Neuron{inputs: [1, 1], weights: [0.8, 0.2], bias: 0.3}
+### Api examples
 
-	Morphine.Neuron.predict(neuron)
-	output: 0.55
+	### XOR gate
+	inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1], [0, 1, 0], [1, 0, 0], [1, 1, 1], [0, 0, 0]]
+	outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 1, 1, 0, 0]]) 
 
-	smarter = Morphine.Neuron.learn(neuron, 0) # target is zero
-
-	Morphine.Neuron.predict(smarter)
-	output: 0.51
-
-	### learn! until it reaches target ###
-	genius = Morphine.Neuron.learn!(neuron, 0)
-
-	Morphine.Neuron.predict(genius)
-	output: 0
+	alias Morphine.NeuralNetwork, as: Network
+	
+	{:ok, network} = Network.start_link		
+	Network.setup_layers(network, [{4, 3}, {1, 4} # {number_of_neurons, number_of_weights}])
+	
+	Network.learn(network, inputs, outputs, 100000)
+	
+	{_, output} = Network.predict(network, [[1, 1, 0]]) 
+	# output ~ [[0.007]]
+	
+	{_, output} = Network.predict(network, [[1, 0, 2]]) 
+	# output ~ [[0.994]]
 
 ### Author
 @leandronsp
