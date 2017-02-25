@@ -121,13 +121,30 @@ defmodule Morphine.NeuralNetwork do
     learn(network, inputs, targets, iterations - 1)
   end
 
-  def predict(network, inputs) do
+  def predict!(_, result, []) do
+    Enum.reduce(result, 1, fn arr, acc ->
+      acc * Enum.reduce(arr, 1, &*/2)
+    end)
+  end
+
+  def predict!(network, result, inputs) do
+    result = predict_result(result, hd(inputs))
+    predict!(network, result, tl(inputs))
+  end
+
+  def predict!(network, inputs) do
+    layers = get_layers(network)
+    result = predict_result(inputs, hd(layers))
+    predict!(network, result, tl(layers))
+  end
+
+  #### Private functions
+
+  defp predict(network, inputs) do
     layers = get_layers(network)
     result = predict_result(inputs, hd(layers))
     predict(result, tl(layers), {result})
   end
-
-  #### Private functions
 
   defp predict( _, [], acc), do: acc
 
