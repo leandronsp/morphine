@@ -90,6 +90,23 @@ defmodule Morphine.NeuralNetworkTest do
        [-0.94522481],
        [0.34093502]]}
 
+    #### First example
+    inputs = [[0, 0, 1], [1, 1, 1], [1, 0, 1], [0, 1, 1]]
+    outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 0]])
+
+    layers = [layer_1, layer_2]
+    smarter_layers = Network.train(inputs, layers, outputs, 100000)
+    {_, output} = Network.predict([[1, 1, 0]], smarter_layers, {})
+    assert output == [[0.999245023462124]]
+
+    inputs = [[0, 0, 0]]
+    outputs = ExAlgebra.Matrix.transpose([[0]])
+    smarter_layers = Network.train(inputs, smarter_layers, outputs, 100000)
+    {_, output} = Network.predict([[0, 1, 0]], smarter_layers, {})
+    assert output == [[0.002122577224874022]]
+
+
+    #### Second example: XOR gate
     inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1], [0, 1, 0], [1, 0, 0], [1, 1, 1], [0, 0, 0]]
     outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 1, 1, 0, 0]])
 
