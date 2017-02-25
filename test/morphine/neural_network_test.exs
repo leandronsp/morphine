@@ -4,6 +4,10 @@ defmodule Morphine.NeuralNetworkTest do
   use ExUnit.Case, async: true
   doctest Morphine.NeuralNetwork
 
+  defmodule Layer do
+    defstruct weights: []
+  end
+
   defmodule Neuron do
     defstruct weights: [], bias: 1
   end
@@ -28,56 +32,70 @@ defmodule Morphine.NeuralNetworkTest do
   end
 
   defmodule Network do
-    def train(_, weights, _, 0), do: weights
+    def train(_, layers, _, 0), do: layers
 
-    def train(inputs, weights, outputs, iterations) do
-      output = predict(weights, inputs)
-      IO.puts "output"
-      IO.inspect output
-      error  = ExAlgebra.Matrix.subtract(outputs, output)
-      IO.puts "error"
-      IO.inspect error
+    def train(inputs, layers, outputs, iterations) do
+      layer_1 = Enum.at(layers, 0)
+      layer_2 = Enum.at(layers, 1)
+      {output_layer_1, output_layer_2} = Network.predict(inputs, layers, {})
 
-      func = fn array -> Enum.map(array, &ActivateFunction.sigmoid_derivative(&1)) end
-      derivative = Enum.map(output, &func.(&1))
-      IO.puts "derivative"
-      IO.inspect derivative
+      sigmoid_derivative = fn array -> Enum.map(array, &ActivateFunction.sigmoid_derivative(&1)) end
+      error_layer_2      = ExAlgebra.Matrix.subtract(outputs, output_layer_2)
+      derivative_layer_2 = Enum.map(output_layer_2, &sigmoid_derivative.(&1))
+      delta_layer_2      = Helper.multiply(error_layer_2, derivative_layer_2)
 
-      multi = Helper.multiply(error, derivative)
+      error_layer_1      = ExAlgebra.Matrix.multiply(delta_layer_2, ExAlgebra.Matrix.transpose(layer_2.weights))
+      derivative_layer_1 = Enum.map(output_layer_1, &sigmoid_derivative.(&1))
+      delta_layer_1      = Helper.multiply(error_layer_1, derivative_layer_1)
 
-      IO.puts "multi"
-      IO.inspect multi
+      adjustment_layer_1 =
+      ExAlgebra.Matrix.transpose(inputs)
+      |> ExAlgebra.Matrix.multiply(delta_layer_1)
 
-      tinputs = ExAlgebra.Matrix.transpose(inputs)
-      IO.puts "tinputs"
-      IO.inspect tinputs
-      adjustment = ExAlgebra.Matrix.multiply(tinputs, multi)
+      adjustment_layer_2 =
+      ExAlgebra.Matrix.transpose(output_layer_1)
+      |> ExAlgebra.Matrix.multiply(delta_layer_2)
 
-      IO.puts "adjustment"
-      IO.inspect adjustment
-      train(inputs, ExAlgebra.Matrix.add(weights, adjustment), outputs, iterations - 1)
-      #build_neuron(ExAlgebra.Matrix.add(neuron.weights, adjustment))
+      new_layers = [
+        adjust_layer(layer_1, adjustment_layer_1),
+        adjust_layer(layer_2, adjustment_layer_2)
+      ]
+
+      train(inputs, new_layers, outputs, iterations - 1)
     end
 
-    def predict(weights, inputs) do
-      func = fn array -> Enum.map(array, &ActivateFunction.sigmoid(&1)) end
-      ExAlgebra.Matrix.multiply(inputs, weights)
-      |> Enum.map(&func.(&1))
+    def adjust_layer(layer, adjustment) do
+      %Layer{weights: ExAlgebra.Matrix.add(layer.weights, adjustment)}
     end
 
-    def build_neuron(weights, bias \\ 1) do
-      %Neuron{weights: weights, bias: bias}
+    def predict(inputs, [hlayer|tlayers], acc) do
+      activate_func = fn array -> Enum.map(array, &ActivateFunction.sigmoid(&1)) end
+
+      result = ExAlgebra.Matrix.multiply(inputs, hlayer.weights)
+      |> Enum.map(&activate_func.(&1))
+
+      predict(result, tlayers, Tuple.append(acc, result))
     end
+
+    def predict(_, [], acc), do: acc
   end
 
   test "start" do
-    inputs  = [[0, 0, 1], [1, 1, 1], [1, 0, 1], [0, 1, 1]]
-    weights = [[-0.16595599], [0.44064899], [-0.99977125]]
-    outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 0]])
+    layer_1 = %Layer{weights: [[-0.16595599, 0.44064899, -0.99977125, -0.39533485],
+       [-0.70648822, -0.81532281, -0.62747958, -0.30887855],
+       [-0.20646505, 0.07763347, -0.16161097, 0.370439]]}
 
-    new_weights = Network.train(inputs, weights, outputs, 10000)
-    assert new_weights == [[9.672993027737387], [-0.20784349926468884], [-4.629636687732811]]
+    layer_2 = %Layer{weights: [[-0.5910955],
+       [0.75623487],
+       [-0.94522481],
+       [0.34093502]]}
 
-    assert Network.predict(new_weights, [[1, 0, 0]]) == [[0.9999370428352157]]
+    inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1], [0, 1, 0], [1, 0, 0], [1, 1, 1], [0, 0, 0]]
+    outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 1, 1, 0, 0]])
+
+    layers = [layer_1, layer_2]
+    smarter_layers = Network.train(inputs, layers, outputs, 60000)
+    {_, output} = Network.predict([[1, 1, 0]], smarter_layers, {})
+    assert output == [[0.007887604373626915]]
   end
 end
