@@ -1,3 +1,5 @@
+require IEx
+
 defmodule Morphine.NeuralNetwork do
 
   alias Morphine.Layer
@@ -39,68 +41,106 @@ defmodule Morphine.NeuralNetwork do
     Agent.update(network, &Map.put(&1, "layers", layers))
   end
 
-  def learn(_, _, _, 0), do: nil
-
-  def learn(network, inputs, outputs, iterations) do
-    layers = get_layers(network)
-
-    layer_1 = Enum.at(layers, 0)
-    layer_2 = Enum.at(layers, 1)
-
-    {output_layer_1, output_layer_2} = predict(network, inputs)
-
-    sigmoid_derivative = fn array -> Enum.map(array, &sigmoid_derivative(&1)) end
-    error_layer_2      = ExAlgebra.Matrix.subtract(outputs, output_layer_2)
-    derivative_layer_2 = Enum.map(output_layer_2, &sigmoid_derivative.(&1))
-    delta_layer_2      = multiply(error_layer_2, derivative_layer_2)
-
-    error_layer_1      = ExAlgebra.Matrix.multiply(delta_layer_2, ExAlgebra.Matrix.transpose(Layer.to_matrix(layer_2)))
-    derivative_layer_1 = Enum.map(output_layer_1, &sigmoid_derivative.(&1))
-    delta_layer_1      = multiply(error_layer_1, derivative_layer_1)
-
-    adjustment_layer_1 =
-    ExAlgebra.Matrix.transpose(inputs)
-    |> ExAlgebra.Matrix.multiply(delta_layer_1)
-
-    adjustment_layer_2 =
-    ExAlgebra.Matrix.transpose(output_layer_1)
-    |> ExAlgebra.Matrix.multiply(delta_layer_2)
-
-    new_layers = [
-      adjust_layer(layer_1, adjustment_layer_1),
-      adjust_layer(layer_2, adjustment_layer_2)
-    ]
-
-    update_layers!(network, new_layers)
-    learn(network, inputs, outputs, iterations - 1)
+  def delta(target, output) do
+    func  = fn array -> Enum.map(array, &sigmoid_derivative(&1)) end
+    error = ExAlgebra.Matrix.subtract(target, output)
+    Enum.map(output, &func.(&1)) |> multiply(error)
   end
 
-  def adjust_layer(layer, adjustment) do
+  def delta(output, next_layer, delta_next_layer) do
+    func  = fn array -> Enum.map(array, &sigmoid_derivative(&1)) end
+    factor = ExAlgebra.Matrix.transpose(Layer.to_matrix(next_layer))
+    error  = ExAlgebra.Matrix.multiply(delta_next_layer, factor)
+
+    Enum.map(output, &func.(&1)) |> multiply(error)
+  end
+
+  def adjust(inputs, target, [{layer, output}]) do
+    delta      = delta(target, output)
+    adjustment = ExAlgebra.Matrix.transpose(inputs) |> ExAlgebra.Matrix.multiply(delta)
+
+    adjusted =
     Layer.to_matrix(layer)
     |> ExAlgebra.Matrix.add(adjustment)
     |> Layer.from_matrix
+
+    [adjusted]
   end
 
-  def predict_result(inputs, layer) do
-    activate_func = fn array -> Enum.map(array, &sigmoid(&1)) end
-    ExAlgebra.Matrix.multiply(inputs, Layer.to_matrix(layer))
-    |> Enum.map(&activate_func.(&1))
+  def adjust(inputs, target, [{layer, output}|remaining]) do
+    {{next_layer, output_next_layer}, _} = List.pop_at(remaining, 0)
+
+    deltanl    = delta(target, output_next_layer)
+    delta      = delta(output, next_layer, deltanl)
+    adjustment = ExAlgebra.Matrix.transpose(inputs) |> ExAlgebra.Matrix.multiply(delta)
+
+    adjusted =
+    Layer.to_matrix(layer)
+    |> ExAlgebra.Matrix.add(adjustment)
+    |> Layer.from_matrix
+
+    adjust(inputs, target, remaining, output, [adjusted])
+  end
+
+  def adjust(_, target, [{layer, output}|[]], output_previous_layer, acc) do
+    delta      = delta(target, output)
+    adjustment = ExAlgebra.Matrix.transpose(output_previous_layer) |> ExAlgebra.Matrix.multiply(delta)
+
+    adjusted =
+    Layer.to_matrix(layer)
+    |> ExAlgebra.Matrix.add(adjustment)
+    |> Layer.from_matrix
+
+    acc ++ [adjusted]
+  end
+
+  def adjust(inputs, target, [{layer, output}|remaining], output_previous_layer, acc) do
+    {{next_layer, output_next_layer}, _} = List.pop_at(remaining, 0)
+
+    deltanl    = delta(target, output_next_layer)
+    delta      = delta(output, next_layer, deltanl)
+    adjustment = ExAlgebra.Matrix.transpose(output_previous_layer) |> ExAlgebra.Matrix.multiply(delta)
+
+    adjusted =
+    Layer.to_matrix(layer)
+    |> ExAlgebra.Matrix.add(adjustment)
+    |> Layer.from_matrix
+
+    adjust(inputs, target, remaining, output, acc ++ [adjusted])
+  end
+
+  def learn(_, _, _, 0), do: nil
+
+  def learn(network, inputs, targets, iterations) do
+    layers             = get_layers(network)
+    outputs            = predict(network, inputs) |> Tuple.to_list
+    layers_and_outputs = Enum.zip(layers, outputs)
+    new_layers         = adjust(inputs, targets, layers_and_outputs)
+
+    update_layers!(network, new_layers)
+    learn(network, inputs, targets, iterations - 1)
   end
 
   def predict(network, inputs) do
     layers = get_layers(network)
     result = predict_result(inputs, hd(layers))
-    predict(network, result, tl(layers), {result})
-  end
-
-  def predict(_, _, [], acc), do: acc
-
-  def predict(network, result, inputs, acc) do
-    result = predict_result(result, hd(inputs))
-    predict(network, result, tl(inputs), Tuple.append(acc, result))
+    predict(result, tl(layers), {result})
   end
 
   #### Private functions
+
+  defp predict( _, [], acc), do: acc
+
+  defp predict(result, inputs, acc) do
+    result = predict_result(result, hd(inputs))
+    predict(result, tl(inputs), Tuple.append(acc, result))
+  end
+
+  defp predict_result(inputs, layer) do
+    activate_func = fn array -> Enum.map(array, &sigmoid(&1)) end
+    ExAlgebra.Matrix.multiply(inputs, Layer.to_matrix(layer))
+    |> Enum.map(&activate_func.(&1))
+  end
 
   defp build_layer(number_of_neurons, number_of_weights) do
     Layer.build(number_of_neurons, number_of_weights, :random)

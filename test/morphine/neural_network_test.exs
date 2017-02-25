@@ -28,7 +28,7 @@ defmodule Morphine.NeuralNetworkTest do
     assert Network.get_layers(network) |> length == 2
   end
 
-  test "#learn/4", %{network: network} do
+  test "#learn and #predict using two layers", %{network: network} do
     neuron_1 = %Neuron{weights: [-0.16595599, -0.70648822, -0.20646505]}
     neuron_2 = %Neuron{weights: [0.44064899, -0.81532281, 0.07763347]}
     neuron_3 = %Neuron{weights: [-0.99977125, -0.62747958, -0.16161097]}
@@ -40,30 +40,35 @@ defmodule Morphine.NeuralNetworkTest do
     Network.setup_layers(network, [{4, 3}, {1, 4}])
     Network.update_layers!(network, [layer_1, layer_2])
 
-    #### First example
-    inputs = [[0, 0, 1], [1, 1, 1], [1, 0, 1], [0, 1, 1]]
-    outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 0]])
-
-    Network.learn(network, inputs, outputs, 100000)
-
-    {_, output} = Network.predict(network, [[1, 1, 0]])
-    assert output == [[0.999245023462124]]
-
-    inputs = [[0, 0, 0]]
-    outputs = ExAlgebra.Matrix.transpose([[0]])
-    Network.learn(network, inputs, outputs, 100000)
-    {_, output} = Network.predict(network, [[0, 1, 0]])
-    assert output == [[0.002122577224874022]]
-
-    #### Second example: XOR gate
+    ### XOR gate
     inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1], [0, 1, 0], [1, 0, 0], [1, 1, 1], [0, 0, 0]]
     outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 1, 1, 0, 0]])
 
-    Network.setup_layers(network, [{4, 3}, {1, 4}])
-    Network.update_layers!(network, [layer_1, layer_2])
     Network.learn(network, inputs, outputs, 60000)
-    {_, output} = Network.predict(network, [[1, 1, 0]])
-    assert output == [[0.007887604373626915]]
+    {_, [[output]]} = Network.predict(network, [[1, 1, 0]])
+    assert output == 0.007887604373626915
   end
+
+  test "#learn and #predict using one single layer", %{network: network} do
+    Network.setup_layers(network, [{1, 3}])
+
+    inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1]]
+    outputs = ExAlgebra.Matrix.transpose([[0, 1, 1]])
+
+    Network.learn(network, inputs, outputs, 60000)
+    {[[output]]} = Network.predict(network, [[1, 1, 0]])
+    assert output > 0.9
+  end
+
+  #test "#learn and #predict using three layers", %{network: network} do
+  #  Network.setup_layers(network, [{4, 2}, {4, 4}, {1, 4}])
+
+  #  inputs = [[0, 0], [0, 1], [1, 0], [1, 1]]
+  #  outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 0]])
+
+  #  Network.learn(network, inputs, outputs, 60000)
+  #  {_, output} = Network.predict(network, [[0, 0]])
+  #  assert output == [[0.007887604373626915]]
+  #end
 
 end
