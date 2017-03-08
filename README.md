@@ -2,6 +2,8 @@
 
 **A neural network library built on top of Elixir.**
 
+Inspired by [Mind](https://stevenmiller888.github.io/mind-how-to-build-a-neural-network/) and this [awesome blog post](https://medium.com/technology-invention-and-more/how-to-build-a-simple-neural-network-in-9-lines-of-python-code-cc8f23647ca1#.voyy4g51x)
+
 ### Api examples
 
 	### XOR gate
