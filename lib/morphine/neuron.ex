@@ -1,12 +1,14 @@
 defmodule Morphine.Neuron do
-  defstruct weights: [], bias: 1
-
   @moduledoc """
-  Documentation for Morphine.Neuron.
+  A simple Neuron, with weights and bias.
   """
 
+  defstruct weights: [], bias: 1
+
+  @type neuron :: Morphine.Neuron
+
   @doc """
-  A simple Neuron.
+  Builds a neuron given weights.
 
   ## Examples
 
@@ -14,6 +16,7 @@ defmodule Morphine.Neuron do
       %Morphine.Neuron{weights: [0.33, 0.42]}
   """
 
+  @spec build(list) :: neuron
   def build(weights), do: %Morphine.Neuron{weights: weights}
 
 end
