@@ -5,10 +5,6 @@ defmodule Morphine do
   Documentation for Morphine.
   """
 
-  @doc """
-  Morphine
-  """
-
   def start(_type, _args) do
     Morphine.Supervisor.start_link
   end
