@@ -11,23 +11,6 @@ defmodule Morphine.NeuralNetworkTest do
     {:ok, network: network}
   end
 
-  test "#setup_layers/2", %{network: network} do
-    assert Network.get_layers(network) == nil
-
-    Network.setup_layers(network, [{4, 3}, {1, 5}, {2, 4}])
-    assert Network.get_layers(network) |> length == 3
-  end
-
-  test "#put_layer/2", %{network: network} do
-    assert Network.get_layers(network) == nil
-
-    Network.put_layer(network, {4, 3})
-    assert Network.get_layers(network) |> length == 1
-
-    Network.put_layer(network, {1, 4})
-    assert Network.get_layers(network) |> length == 2
-  end
-
   test "#learn and #predict using multiple layers", %{network: network} do
     Network.setup_layers(network, [{4, 3}, {4, 4}, {1, 4}])
 

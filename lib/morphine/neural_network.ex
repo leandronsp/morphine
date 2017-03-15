@@ -1,25 +1,48 @@
-require IEx
-
 defmodule Morphine.NeuralNetwork do
+  @moduledoc """
+  A Network is the core of Morphine. It sets up layers and persist them by using
+  Agents.
+
+  Layers can be updated anytime.
+  """
 
   alias Morphine.Layer
+  alias Morphine.Calc.Matrix, as: Matrix
 
-  @moduledoc """
-  Documentation for Morphine.NeuralNetwork.
-  """
-
-  @doc """
-  A simple NeuralNetwork.
-  """
+  @type neuron  :: Morphine.Neuron
+  @type layer   :: Morphine.Layer
+  @type network :: Morphine.NeuralNetwork
 
   def start_link do
     Agent.start_link fn -> %{} end
   end
 
+  @doc """
+  ## Examples
+
+      iex> {:ok, network} = Morphine.NeuralNetwork.start_link
+      iex> Morphine.NeuralNetwork.get_layers(network)
+      nil
+  """
+
+  @spec get_layers(network) :: list
   def get_layers(network) do
     Agent.get(network, &Map.get(&1, "layers"))
   end
 
+  @doc """
+  Given a number of neurons and the number of weights for each neuron, creates a
+  persistent layer and appends to the list of layers.
+
+  ## Examples
+
+      iex> {:ok, network} = Morphine.NeuralNetwork.start_link
+      iex> Morphine.NeuralNetwork.put_layer(network, {1, 4})
+      iex> Morphine.NeuralNetwork.get_layers(network) |> length
+      1
+  """
+
+  @spec put_layer(network, tuple) :: any
   def put_layer(network, {number_of_neurons, number_of_weights}) do
     layer = build_layer(number_of_neurons, number_of_weights)
 
@@ -29,6 +52,22 @@ defmodule Morphine.NeuralNetwork do
     end
   end
 
+  @doc """
+  Creates persistent layers given an array of tuples containing:
+    - number of neurons
+    - number of weights for each neuron
+
+  Please keep in mind that this operation will OVERRIDE the current persistent layers.
+
+  ## Examples
+
+      iex> {:ok, network} = Morphine.NeuralNetwork.start_link
+      iex> Morphine.NeuralNetwork.setup_layers(network, [{1, 4}, {4, 3}])
+      iex> Morphine.NeuralNetwork.get_layers(network) |> length
+      2
+  """
+
+  @spec setup_layers(network, list) :: any
   def setup_layers(network, data) do
     layers = Enum.map(data, fn {number_of_neurons, number_of_weights} ->
       build_layer(number_of_neurons, number_of_weights)
@@ -37,31 +76,44 @@ defmodule Morphine.NeuralNetwork do
     Agent.update(network, &Map.put(&1, "layers", layers))
   end
 
+  @doc """
+  Same as `setup_layers`, but this operation takes a list of layers instead.
+  Keep in mind that this operation will OVERRIDE the current persistent layers.
+
+  ## Examples
+
+      iex> {:ok, network} = Morphine.NeuralNetwork.start_link
+      iex> Morphine.NeuralNetwork.update_layers!(network, [%Morphine.Layer{neurons: []}])
+      iex> Morphine.NeuralNetwork.get_layers(network) |> length
+      1
+  """
+
+  @spec update_layers!(network, list) :: any
   def update_layers!(network, layers) do
     Agent.update(network, &Map.put(&1, "layers", layers))
   end
 
   def delta(target, output) do
     func  = fn array -> Enum.map(array, &sigmoid_derivative(&1)) end
-    error = ExAlgebra.Matrix.subtract(target, output)
-    Enum.map(output, &func.(&1)) |> multiply(error)
+    error = Matrix.subtract(target, output)
+    Enum.map(output, &func.(&1)) |> Matrix.naive_multiply(error)
   end
 
   def delta(output, next_layer, delta_next_layer) do
     func  = fn array -> Enum.map(array, &sigmoid_derivative(&1)) end
-    factor = ExAlgebra.Matrix.transpose(Layer.to_matrix(next_layer))
-    error  = ExAlgebra.Matrix.multiply(delta_next_layer, factor)
+    factor = Matrix.transpose(Layer.to_matrix(next_layer))
+    error  = Matrix.multiply(delta_next_layer, factor)
 
-    Enum.map(output, &func.(&1)) |> multiply(error)
+    Enum.map(output, &func.(&1)) |> Matrix.naive_multiply(error)
   end
 
   def adjust(inputs, target, [{layer, output}]) do
     delta      = delta(target, output)
-    adjustment = ExAlgebra.Matrix.transpose(inputs) |> ExAlgebra.Matrix.multiply(delta)
+    adjustment = Matrix.transpose(inputs) |> Matrix.multiply(delta)
 
     adjusted =
     Layer.to_matrix(layer)
-    |> ExAlgebra.Matrix.add(adjustment)
+    |> Matrix.add(adjustment)
     |> Layer.from_matrix
 
     [adjusted]
@@ -72,11 +124,11 @@ defmodule Morphine.NeuralNetwork do
 
     deltanl    = delta(target, output_last_layer)
     delta      = delta(output, last_layer, deltanl)
-    adjustment = ExAlgebra.Matrix.transpose(inputs) |> ExAlgebra.Matrix.multiply(delta)
+    adjustment = Matrix.transpose(inputs) |> Matrix.multiply(delta)
 
     adjusted =
     Layer.to_matrix(layer)
-    |> ExAlgebra.Matrix.add(adjustment)
+    |> Matrix.add(adjustment)
     |> Layer.from_matrix
 
     adjust(inputs, target, remaining, output, [adjusted])
@@ -84,11 +136,11 @@ defmodule Morphine.NeuralNetwork do
 
   def adjust(_, target, [{layer, output}|[]], output_previous_layer, acc) do
     delta      = delta(target, output)
-    adjustment = ExAlgebra.Matrix.transpose(output_previous_layer) |> ExAlgebra.Matrix.multiply(delta)
+    adjustment = Matrix.transpose(output_previous_layer) |> Matrix.multiply(delta)
 
     adjusted =
     Layer.to_matrix(layer)
-    |> ExAlgebra.Matrix.add(adjustment)
+    |> Matrix.add(adjustment)
     |> Layer.from_matrix
 
     acc ++ [adjusted]
@@ -99,11 +151,11 @@ defmodule Morphine.NeuralNetwork do
 
     deltanl    = delta(target, output_last_layer)
     delta      = delta(output, last_layer, deltanl)
-    adjustment = ExAlgebra.Matrix.transpose(output_previous_layer) |> ExAlgebra.Matrix.multiply(delta)
+    adjustment = Matrix.transpose(output_previous_layer) |> Matrix.multiply(delta)
 
     adjusted =
     Layer.to_matrix(layer)
-    |> ExAlgebra.Matrix.add(adjustment)
+    |> Matrix.add(adjustment)
     |> Layer.from_matrix
 
     adjust(inputs, target, remaining, output, acc ++ [adjusted])
@@ -155,7 +207,7 @@ defmodule Morphine.NeuralNetwork do
 
   defp predict_result(inputs, layer) do
     activate_func = fn array -> Enum.map(array, &sigmoid(&1)) end
-    ExAlgebra.Matrix.multiply(inputs, Layer.to_matrix(layer))
+    Matrix.multiply(inputs, Layer.to_matrix(layer))
     |> Enum.map(&activate_func.(&1))
   end
 
@@ -166,17 +218,4 @@ defmodule Morphine.NeuralNetwork do
   defp sigmoid(calc), do: 1 / (1 + :math.exp(-calc))
 
   defp sigmoid_derivative(calc), do: calc * (1 - calc)
-
-  defp naive_multiply([], []), do: []
-
-  defp naive_multiply([u_head | u_tail], [v_head | v_tail]) do
-    [u_head * v_head | naive_multiply(u_tail, v_tail)]
-  end
-
-  defp multiply([], []), do: []
-
-  defp multiply([a_first_row | a_remaining_rows], [b_first_row | b_remaining_rows]) do
-    [naive_multiply(a_first_row, b_first_row) | multiply(a_remaining_rows, b_remaining_rows)]
-  end
-
 end
