@@ -5,6 +5,8 @@ defmodule Morphine.Layer do
   """
 
   alias Morphine.Neuron
+  alias Morphine.Calc.Matrix, as: Matrix
+
   defstruct neurons: []
 
   @type layer :: Morphine.Layer
@@ -58,7 +60,7 @@ defmodule Morphine.Layer do
   @spec to_matrix(layer) :: list
   def to_matrix(layer) do
     Enum.map(layer.neurons, fn neuron -> neuron.weights end)
-    |> ExAlgebra.Matrix.transpose
+    |> Matrix.transpose
   end
 
   @doc """
@@ -79,7 +81,7 @@ defmodule Morphine.Layer do
 
   @spec from_matrix(list) :: layer
   def from_matrix(matrix) do
-    tmatrix = ExAlgebra.Matrix.transpose(matrix)
+    tmatrix = Matrix.transpose(matrix)
     neurons = Enum.map(tmatrix, &Neuron.build/1)
 
     %Morphine.Layer{neurons: neurons}

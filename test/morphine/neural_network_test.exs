@@ -5,20 +5,11 @@ defmodule Morphine.NeuralNetworkTest do
   alias Morphine.Layer
   alias Morphine.Neuron
   alias Morphine.NeuralNetwork, as: Network
+  alias Morphine.Calc.Matrix, as: Matrix
 
   setup do
     {:ok, network} = Network.start_link
     {:ok, network: network}
-  end
-
-  test "#learn and #predict using multiple layers", %{network: network} do
-    Network.setup_layers(network, [{4, 3}, {4, 4}, {1, 4}])
-
-    inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1]]
-    outputs = ExAlgebra.Matrix.transpose([[0, 1, 1]])
-
-    Network.learn(network, inputs, outputs, 10000)
-    assert Network.predict!(network, [[1, 1, 0]]) > 0.99
   end
 
   test "#learn and #predict given specific weights", %{network: network} do
@@ -35,7 +26,7 @@ defmodule Morphine.NeuralNetworkTest do
 
     ### XOR gate
     inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1], [0, 1, 0], [1, 0, 0], [1, 1, 1], [0, 0, 0]]
-    outputs = ExAlgebra.Matrix.transpose([[0, 1, 1, 1, 1, 0, 0]])
+    outputs = Matrix.transpose([[0, 1, 1, 1, 1, 0, 0]])
 
     Network.learn(network, inputs, outputs, 60000)
     assert Network.predict!(network, [[1, 1, 0]]) == 0.007887604373626915
