@@ -10,8 +10,8 @@ defmodule Morphine.BackPropagation do
   @type layer :: Morphine.Layer
 
   @doc """
-  Calculates delta for the output layer.
-  It takes the output of current layer, the output layer and the delta of output layer.
+  Calculates delta for a single layer.
+  It takes the target and the output of current layer.
 
   ## Examples
 
@@ -27,8 +27,8 @@ defmodule Morphine.BackPropagation do
   end
 
   @doc """
-  Calculates delta for any layer but the output one.
-  It takes the target and the output of current layer.
+  Calculates delta for any layer but the last one.
+  It takes the output of current layer, the last layer and the delta of last (output) layer.
 
   ## Examples
 
