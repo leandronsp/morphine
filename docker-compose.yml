@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  dev:
+    image: elixir:1.11
+    container_name: morphine
+    working_dir: /morphine
+    volumes:
+      - ./:/morphine
+      - mix_volume:/root/.mix
+
+volumes:
+  mix_volume:

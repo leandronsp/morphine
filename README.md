@@ -10,18 +10,24 @@ Inspired by [Mind](https://stevenmiller888.github.io/mind-how-to-build-a-neural-
 
 	### XOR gate
 	inputs  = [[0, 0, 1], [0, 1, 1], [1, 0, 1], [0, 1, 0], [1, 0, 0], [1, 1, 1], [0, 0, 0]]
-	outputs = Morphing.Calc.Matrix.transpose([[0, 1, 1, 1, 1, 0, 0]]) 
-	
-	{:ok, network} = Network.start_link		
+	outputs = Morphing.Calc.Matrix.transpose([[0, 1, 1, 1, 1, 0, 0]])
+
+	{:ok, network} = Network.start_link
 	Network.setup_layers(network, [{4, 3}, {1, 4} # {number_of_neurons, number_of_weights}])
-	
+
 	Network.learn(network, inputs, outputs, 100000)
-	
-	output = Network.predict(network, [[1, 1, 0]]) 
+
+	output = Network.predict(network, [[1, 1, 0]])
 	# output ~ [[0.007]]
-	
-	output = Network.predict(network, [[1, 0, 2]]) 
+
+	output = Network.predict(network, [[1, 0, 2]])
 	# output ~ [[0.994]]
+
+### Development (using Docker)
+```
+make mix.deps.get
+make mix.test
+```
 
 ### Author
 @leandronsp

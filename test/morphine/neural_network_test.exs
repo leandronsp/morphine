@@ -29,7 +29,7 @@ defmodule Morphine.NeuralNetworkTest do
     outputs = Matrix.transpose([[0, 1, 1, 1, 1, 0, 0]])
 
     Network.learn(network, inputs, outputs, 60000)
-    assert Network.predict!(network, [[1, 1, 0]]) == 0.007887604373626915
+    assert Network.predict!(network, [[1, 1, 0]]) == 0.007887604373626907
   end
 
 end
