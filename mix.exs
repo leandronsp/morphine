@@ -3,8 +3,8 @@ defmodule Morphine.Mixfile do
 
   def project do
     [app: :morphine,
-     version: "0.1.1",
-     elixir: "~> 1.5",
+     version: "0.1.2",
+     elixir: "~> 1.11",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps()]
